@@ -1,0 +1,141 @@
+class Conta {
+    numero: number
+    titular: string
+    saldo: number
+
+    constructor(numero: number, titular: string, saldo: number = 0) {
+        this.numero = numero
+        this.titular = titular
+        this.saldo = saldo
+    }
+
+    sacar(valor: number): boolean {
+        if (valor > this.saldo) {
+            console.log("Saldo insuficiente.")
+            return false
+        }
+        this.saldo -= valor
+        return true
+    }
+
+    depositar(valor: number): void {
+        this.saldo += valor
+    }
+}
+
+class Banco {
+    private contas: Conta[] = []
+
+    adicionarConta(conta: Conta): void {
+        this.contas.push(conta)
+    }
+
+    consultarPorIndice(indice: number): Conta {
+        if (indice >= 0 && indice < this.contas.length) {
+            return this.contas[indice]
+        }
+        throw new Error("Índice fora do intervalo válido.")
+    }
+
+    excluir(numeroConta: number): void {
+        const index = this.contas.findIndex(conta => conta.numero === numeroConta)
+        if (index !== -1) {
+            this.contas.splice(index, 1)
+        } else {
+            throw new Error("Conta não encontrada.")
+        }
+    }
+
+    atualizar(numeroConta: number, novoTitular: string): void {
+        const conta = this.contas.find(conta => conta.numero === numeroConta)
+        if (conta) {
+            conta.titular = novoTitular
+        } else {
+            throw new Error("Conta não encontrada.")
+        }
+    }
+
+    sacar(numeroConta: number, valor: number): void {
+        const conta = this.contas.find(conta => conta.numero === numeroConta)
+        if (conta) {
+            if (!conta.sacar(valor)) {
+                throw new Error("Saldo insuficiente.")
+            }
+        } else {
+            throw new Error("Conta não encontrada.")
+        }
+    }
+
+    depositar(numeroConta: number, valor: number): void {
+        const conta = this.contas.find(conta => conta.numero === numeroConta)
+        if (conta) {
+            conta.depositar(valor)
+        } else {
+            throw new Error("Conta não encontrada.")
+        }
+    }
+
+    transferir(numeroOrigem: number, numeroDestino: number, valor: number): void {
+        const contaOrigem = this.contas.find(conta => conta.numero === numeroOrigem)
+        const contaDestino = this.contas.find(conta => conta.numero === numeroDestino)
+
+        if (!contaOrigem || !contaDestino) {
+            throw new Error("Uma ou ambas as contas não foram encontradas.")
+        }
+
+        if (!contaOrigem.sacar(valor)) {
+            throw new Error("Saldo insuficiente para transferência.")
+        }
+
+        contaDestino.depositar(valor)
+    }
+
+    transferirParaMultiplasContas(numeroOrigem: number, contasDestino: number[], valor: number): void {
+        const contaOrigem = this.contas.find(conta => conta.numero === numeroOrigem)
+        if (!contaOrigem) {
+            throw new Error("Conta de origem não encontrada.")
+        }
+
+        const valorTotal = valor * contasDestino.length
+        if (contaOrigem.saldo < valorTotal) {
+            throw new Error("Saldo insuficiente para transferências múltiplas.")
+        }
+
+        contasDestino.forEach(numeroDestino => {
+            const contaDestino = this.contas.find(conta => conta.numero === numeroDestino)
+            if (contaDestino) {
+                contaOrigem.sacar(valor)
+                contaDestino.depositar(valor)
+            } else {
+                console.log(`Conta destino ${numeroDestino} não encontrada. Ignorada.`)
+            }
+        })
+    }
+
+    quantidadeContas(): number {
+        return this.contas.length
+    }
+
+    totalDepositos(): number {
+        return this.contas.reduce((total, conta) => total + conta.saldo, 0)
+    }
+
+    mediaSaldos(): number {
+        const total = this.totalDepositos()
+        const quantidade = this.quantidadeContas()
+        return quantidade > 0 ? total / quantidade : 0
+    }
+}
+
+// Exemplo de uso:
+const banco = new Banco()
+const conta1 = new Conta(1, "Alice", 1000)
+const conta2 = new Conta(2, "Bob", 500)
+const conta3 = new Conta(3, "Charlie", 300)
+
+banco.adicionarConta(conta1)
+banco.adicionarConta(conta2)
+banco.adicionarConta(conta3)
+
+banco.transferir(1, 2, 200)
+console.log(banco.mediaSaldos())

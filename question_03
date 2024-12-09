@@ -1,0 +1,233 @@
+class Conta {
+    numero: string
+    saldo: number
+
+    constructor(numero: string, saldo: number = 0) {
+        this.numero = numero
+        this.saldo = saldo
+    }
+
+    sacar(valor: number): boolean {
+        if (valor > this.saldo) {
+            return false; // Saldo insuficiente
+        }
+        this.saldo -= valor
+        return true
+    }
+
+    depositar(valor: number): void {
+        this.saldo += valor
+    }
+
+    transferir(contaDestino: Conta, valor: number): boolean {
+        if (this.sacar(valor)) {
+            contaDestino.depositar(valor)
+            return true
+        }
+        return false
+    }
+
+    toString(): string {
+        return `Conta: ${this.numero}, Saldo: ${this.saldo}`
+    }
+}
+
+class Banco {
+    private contas: Conta[] = []
+
+    inserir(conta: Conta): void {
+        if (this.contas.find(c => c.numero === conta.numero)) {
+            throw new Error("Conta já existe.")
+        }
+        this.contas.push(conta)
+    }
+
+    consultar(numero: string): Conta | undefined {
+        return this.contas.find(conta => conta.numero === numero)
+    }
+
+    sacar(numero: string, valor: number): void {
+        const conta = this.consultar(numero)
+        if (!conta) {
+            throw new Error("Conta não encontrada.")
+        }
+        if (!conta.sacar(valor)) {
+            throw new Error("Saldo insuficiente.")
+        }
+    }
+
+    depositar(numero: string, valor: number): void {
+        const conta = this.consultar(numero)
+        if (!conta) {
+            throw new Error("Conta não encontrada.")
+        }
+        conta.depositar(valor)
+    }
+
+    excluir(numero: string): void {
+        const index = this.contas.findIndex(conta => conta.numero === numero)
+        if (index === -1) {
+            throw new Error("Conta não encontrada.")
+        }
+        this.contas.splice(index, 1)
+    }
+
+    transferir(numeroOrigem: string, numeroDestino: string, valor: number): void {
+        const contaOrigem = this.consultar(numeroOrigem)
+        const contaDestino = this.consultar(numeroDestino)
+
+        if (!contaOrigem || !contaDestino) {
+            throw new Error("Uma ou ambas as contas não foram encontradas.")
+        }
+
+        if (!contaOrigem.transferir(contaDestino, valor)) {
+            throw new Error("Saldo insuficiente para transferência.")
+        }
+    }
+
+    totalSaldos(): number {
+        return this.contas.reduce((total, conta) => total + conta.saldo, 0)
+    }
+
+    quantidadeContas(): number {
+        return this.contas.length
+    }
+
+    mediaSaldos(): number {
+        const total = this.totalSaldos()
+        const quantidade = this.quantidadeContas()
+        return quantidade > 0 ? total / quantidade : 0
+    }
+
+    toString(): string {
+        return this.contas.map(conta => conta.toString()).join("\n")
+    }
+}
+
+export { Conta, Banco }
+
+import prompt from "prompt-sync"
+import { Conta, Banco } from "./banco"
+
+const input = prompt()
+const banco = new Banco()
+
+function inserir(): void {
+    console.log("\nCadastrar conta\n")
+    const numero: string = input('Digite o número da conta:')
+    const saldoInicial: number = parseFloat(input('Digite o saldo inicial da conta:'))
+    const conta = new Conta(numero, saldoInicial)
+    try {
+        banco.inserir(conta);
+        console.log("Conta inserida com sucesso.")
+    } catch (e) {
+        console.error(e.message)
+    }
+}
+
+function consultar(): void {
+    console.log("\nConsultar conta\n")
+    const numero: string = input('Digite o número da conta:')
+    const conta = banco.consultar(numero)
+    if (conta) {
+        console.log(conta.toString())
+    } else {
+        console.log("Conta não encontrada.")
+    }
+}
+
+function sacar(): void {
+    console.log("\nSacar\n")
+    const numero: string = input('Digite o número da conta:')
+    const valor: number = parseFloat(input('Digite o valor do saque:'))
+    try {
+        banco.sacar(numero, valor)
+        console.log("Saque realizado com sucesso.")
+    } catch (e) {
+        console.error(e.message)
+    }
+}
+
+function depositar(): void {
+    console.log("\nDepositar\n")
+    const numero: string = input('Digite o número da conta:')
+    const valor: number = parseFloat(input('Digite o valor do depósito:'))
+    try {
+        banco.depositar(numero, valor)
+        console.log("Depósito realizado com sucesso.")
+    } catch (e) {
+        console.error(e.message)
+    }
+}
+
+function excluir(): void {
+    console.log("\nExcluir conta\n")
+    const numero: string = input('Digite o número da conta:')
+    try {
+        banco.excluir(numero)
+        console.log("Conta excluída com sucesso.")
+    } catch (e) {
+        console.error(e.message)
+    }
+}
+
+function transferir(): void {
+    console.log("\nTransferir\n")
+    const origem: string = input('Digite o número da conta de origem:')
+    const destino: string = input('Digite o número da conta de destino:')
+    const valor: number = parseFloat(input('Digite o valor a transferir:'))
+    try {
+        banco.transferir(origem, destino, valor)
+        console.log("Transferência realizada com sucesso.")
+    } catch (e) {
+        console.error(e.message)
+    }
+}
+
+function totalizacoes(): void {
+    console.log("\nTotalizações\n")
+    console.log("Total de contas:", banco.quantidadeContas())
+    console.log("Total de saldos:", banco.totalSaldos())
+    console.log("Média dos saldos:", banco.mediaSaldos())
+}
+
+let opcao: string = ''
+do {
+    console.log('\nBem vindo\nDigite uma opção:')
+    console.log('Contas:')
+    console.log('1 - Inserir  2 - Consultar  3 - Sacar')
+    console.log('4 - Depositar  5 - Excluir  6 - Transferir')
+    console.log('7 - Totalizações')
+    console.log('0 - Sair\n')
+    opcao = input("Opção: ")
+    switch (opcao) {
+        case "1":
+            inserir()
+            break
+        case "2":
+            consultar()
+            break
+        case "3":
+            sacar()
+            break
+        case "4":
+            depositar()
+            break
+        case "5":
+            excluir()
+            break
+        case "6":
+            transferir()
+            break
+        case "7":
+            totalizacoes()
+            break
+        case "0":
+            console.log("Aplicação encerrada.")
+            break
+        default:
+            console.log("Opção inválida.")
+            break
+    }
+    if (opcao !== "0") input("Pressione <Enter> para continuar...")
+} while (opcao !== "0")
